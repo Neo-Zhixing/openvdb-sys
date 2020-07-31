@@ -9,7 +9,14 @@ fn main() {
     println!("cargo:rustc-link-lib=static=openvdb");
 
     // Dynamic Links
-    println!("cargo:rustc-link-lib=dylib=c++");   // stdlib
+
+    // stdlib
+    if env::var("CARGO_CFG_TARGET_OS").unwrap() == "macos" {
+        println!("cargo:rustc-link-lib=dylib=c++");
+    } else {
+        println!("cargo:rustc-link-lib=dylib=stdc++");
+    }
+
     println!("cargo:rustc-link-lib=dylib=blosc"); // Blosc
     println!("cargo:rustc-link-lib=dylib=tbb");   // TBB::tbb
     println!("cargo:rustc-link-lib=dylib=Half");  // ilmbase::Half
@@ -38,8 +45,10 @@ fn main() {
         .clang_args(&["-x", "c++"]) // Force c++ on .h header files
         .clang_arg("-std=c++17")
         .clang_arg(format!("-I/{}", openvdb_path.join("include").display())) // Include OpenVDB header files
-        .whitelist_recursively(true)
         .whitelist_function("openvdb::.*::initialize")
+        .whitelist_function("openvdb::.*::uninitialize")
+        .disable_name_namespacing()
+        .whitelist_recursively(false)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("Unable to generate OpenVDB bindings");

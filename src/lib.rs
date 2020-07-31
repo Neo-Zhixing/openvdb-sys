@@ -7,10 +7,12 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
-    fn initialize() {
+    fn test_initialize() {
         unsafe {
-            openvdb_v7_1_initialize();
+            initialize();
+            uninitialize();
         }
     }
 }
