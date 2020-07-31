@@ -13,6 +13,7 @@ mod tests {
         unsafe {
             initialize();
             uninitialize();
+            hello_world();
         }
     }
 }

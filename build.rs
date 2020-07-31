@@ -1,10 +1,9 @@
-extern crate bindgen;
 use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    println!("cargo:rerun-if-changed=wrapper.hpp");
-
+    println!("cargo:rerun-if-changed=src/lib.h");
+    println!("cargo:rerun-if-changed=src/lib.cc");
     // Static Links
     println!("cargo:rustc-link-lib=static=openvdb");
 
@@ -21,6 +20,10 @@ fn main() {
     println!("cargo:rustc-link-lib=dylib=tbb");   // TBB::tbb
     println!("cargo:rustc-link-lib=dylib=Half");  // ilmbase::Half
     println!("cargo:rustc-link-lib=dylib=z");     // ZLIB
+
+    cc::Build::new()
+        .file("bridge/lib.cc")
+        .compile("openvdb-bridge");
 
     // Build components: https://www.openvdb.org/documentation/doxygen/build.html#buildComponents
     let openvdb_path = PathBuf::from(cmake::Config::new("openvdb")
@@ -41,12 +44,13 @@ fn main() {
     println!("cargo:rustc-link-search={}", openvdb_path.join("lib").display());
 
     let bindings = bindgen::Builder::default()
-        .header("wrapper.hpp")
+        .header("bridge/lib.h")
         .clang_args(&["-x", "c++"]) // Force c++ on .h header files
         .clang_arg("-std=c++17")
         .clang_arg(format!("-I/{}", openvdb_path.join("include").display())) // Include OpenVDB header files
         .whitelist_function("openvdb::.*::initialize")
         .whitelist_function("openvdb::.*::uninitialize")
+        .whitelist_function("openvdb::bridge::.*")
         .disable_name_namespacing()
         .whitelist_recursively(false)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))

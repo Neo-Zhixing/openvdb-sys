@@ -33,5 +33,6 @@ maintenance = { status = "experimental" }
 [dependencies]
 
 [build-dependencies]
-bindgen = "0.54.1"
+bindgen = "0.54"
+cc = "1.0"
 cmake = "0.1"
