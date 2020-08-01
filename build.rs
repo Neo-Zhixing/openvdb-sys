@@ -2,8 +2,8 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    println!("cargo:rerun-if-changed=src/lib.h");
-    println!("cargo:rerun-if-changed=src/lib.cc");
+    println!("cargo:rerun-if-changed=bridge/lib.h");
+    println!("cargo:rerun-if-changed=bridge/lib.cc");
     // Static Links
     println!("cargo:rustc-link-lib=static=openvdb");
 
@@ -20,10 +20,6 @@ fn main() {
     println!("cargo:rustc-link-lib=dylib=tbb");   // TBB::tbb
     println!("cargo:rustc-link-lib=dylib=Half");  // ilmbase::Half
     println!("cargo:rustc-link-lib=dylib=z");     // ZLIB
-
-    cc::Build::new()
-        .file("bridge/lib.cc")
-        .compile("openvdb-bridge");
 
     // Build components: https://www.openvdb.org/documentation/doxygen/build.html#buildComponents
     let openvdb_path = PathBuf::from(cmake::Config::new("openvdb")
@@ -51,11 +47,20 @@ fn main() {
         .whitelist_function("openvdb::.*::initialize")
         .whitelist_function("openvdb::.*::uninitialize")
         .whitelist_function("openvdb::bridge::.*")
+        .whitelist_type("openvdb::bridge::.*")
+        .opaque_type("openvdb::.*")
         .disable_name_namespacing()
         .whitelist_recursively(false)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("Unable to generate OpenVDB bindings");
+
+    cc::Build::new()
+        .file("bridge/lib.cc")
+        .include(openvdb_path.join("include"))
+        .flag("-std=c++17")
+        .cpp(true)
+        .compile("openvdb-bridge");
 
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings
