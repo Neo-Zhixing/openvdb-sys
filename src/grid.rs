@@ -44,6 +44,46 @@ impl Drop for Accessor {
     }
 }
 
+impl Accessor {
+    #[inline]
+    fn set<T>(&mut self, coords: T, value: u16)
+        where T: Into<[i32; 3]> {
+        unsafe {
+            ffi::u16_grid_accessor_set_value_on(self.ptr, &coords.into(), value);
+        }
+    }
+
+    #[inline]
+    fn set_on<T>(&mut self, coords: T, value: u16)
+        where T: Into<[i32; 3]> {
+        self.set(coords, value);
+    }
+
+    #[inline]
+    fn set_off<T>(&mut self, coords: T, value: u16)
+        where T: Into<[i32; 3]> {
+        unsafe {
+            ffi::u16_grid_accessor_set_value_off(self.ptr, &coords.into(), value);
+        }
+    }
+
+    #[inline]
+    fn set_active_state<T>(&mut self, coords: T, active: bool)
+        where T: Into<[i32; 3]> {
+        unsafe {
+            ffi::u16_grid_accessor_set_active_state(self.ptr, &coords.into(), active);
+        }
+    }
+
+    #[inline]
+    fn get<T>(&mut self, coords: T) -> u16
+        where T: Into<[i32; 3]> {
+        unsafe {
+            ffi::u16_grid_accessor_get_value(self.ptr, &coords.into())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -51,6 +91,17 @@ mod tests {
     #[test]
     fn test_initialize() {
         let grid = Grid::new();
-        let accessor = grid.accessor();
+        let mut accessor = grid.accessor();
+
+        let coords: [i32; 3] = [1, 2, 10];
+        accessor.set(coords, 7);
+        assert_eq!(accessor.get(coords), 7);
+
+        let coords: [i32; 3] = [std::i32::MAX, std::i32::MAX, std::i32::MAX];
+        accessor.set(coords, 19);
+        assert_eq!(accessor.get(coords), 19);
+
+
+        assert_eq!(accessor.get([9, 1, 1]), 0);
     }
 }

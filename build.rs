@@ -39,6 +39,13 @@ fn main() {
     // Include the compiled libopenvdb static lib in the search path
     println!("cargo:rustc-link-search={}", openvdb_path.join("lib").display());
 
+    cc::Build::new()
+        .file("bridge/lib.cc")
+        .include(openvdb_path.join("include"))
+        .flag("-std=c++17")
+        .cpp(true)
+        .compile("openvdb-bridge");
+
     let bindings = bindgen::Builder::default()
         .header("bridge/lib.h")
         .clang_args(&["-x", "c++"]) // Force c++ on .h header files
@@ -46,21 +53,14 @@ fn main() {
         .clang_arg(format!("-I/{}", openvdb_path.join("include").display())) // Include OpenVDB header files
         .whitelist_function("openvdb::.*::initialize")
         .whitelist_function("openvdb::.*::uninitialize")
-        .whitelist_function("openvdb::bridge::.*")
-        .whitelist_type("openvdb::bridge::.*")
+        .whitelist_function("openvdb_sys::.*")
+        .whitelist_type("openvdb_sys::.*")
         .opaque_type("openvdb::.*")
         .disable_name_namespacing()
         .whitelist_recursively(false)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("Unable to generate OpenVDB bindings");
-
-    cc::Build::new()
-        .file("bridge/lib.cc")
-        .include(openvdb_path.join("include"))
-        .flag("-std=c++17")
-        .cpp(true)
-        .compile("openvdb-bridge");
 
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings
